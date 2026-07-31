@@ -62,7 +62,8 @@ export async function createField(formData: FormData): Promise<void> {
     redirect('/dashboard/fields/new?error=Field+name+is+required')
   }
 
-  const { error } = await supabase.rpc('create_field_for_user', {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).rpc('create_field_for_user', {
     p_name: name,
     p_address: address || null,
     p_city: city || null,
