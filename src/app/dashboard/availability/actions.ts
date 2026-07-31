@@ -24,7 +24,6 @@ export async function getTeamsForUser() {
     .from('teams')
     .select('id, name, age_group')
     .in('organization_id', orgIds)
-    .eq('status', 'active')
 
   return teams || []
 }
