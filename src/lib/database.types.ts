@@ -122,51 +122,85 @@ export interface Database {
           }
         ]
       }
-      requests: {
+      game_requests: {
         Row: {
           id: string
-          post_id: string
-          sender_team_id: string
+          requester_team_id: string
           recipient_team_id: string
+          availability_post_id: string | null
+          proposed_date: string
+          num_games: number
           message: string | null
+          game_format: string
           status: string
           created_at: string
         }
         Insert: {
           id?: string
-          post_id: string
-          sender_team_id: string
+          requester_team_id: string
           recipient_team_id: string
+          availability_post_id?: string | null
+          proposed_date: string
+          num_games: number
           message?: string | null
+          game_format: string
           status?: string
           created_at?: string
         }
         Update: {
           id?: string
-          post_id?: string
-          sender_team_id?: string
+          requester_team_id?: string
           recipient_team_id?: string
+          availability_post_id?: string | null
+          proposed_date?: string
+          num_games?: number
           message?: string | null
+          game_format?: string
           status?: string
           created_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "requests_post_id_fkey"
-            columns: ["post_id"]
-            referencedRelation: "availability_posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "requests_sender_team_id_fkey"
-            columns: ["sender_team_id"]
+            foreignKeyName: "game_requests_requester_team_id_fkey"
+            columns: ["requester_team_id"]
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "requests_recipient_team_id_fkey"
+            foreignKeyName: "game_requests_recipient_team_id_fkey"
             columns: ["recipient_team_id"]
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      conversations: {
+        Row: {
+          id: string
+          team_1_id: string
+          team_2_id: string
+          game_request_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_1_id: string
+          team_2_id: string
+          game_request_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          team_1_id?: string
+          team_2_id?: string
+          game_request_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_game_request_id_fkey"
+            columns: ["game_request_id"]
+            referencedRelation: "game_requests"
             referencedColumns: ["id"]
           }
         ]

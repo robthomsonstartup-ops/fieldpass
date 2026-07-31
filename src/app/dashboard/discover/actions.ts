@@ -1,8 +1,49 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
+import type { Database } from '@/lib/database.types'
+
+async function createClient() {
+  const cookieStore = await cookies()
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {}
+        },
+      },
+    }
+  )
+}
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+async function getMyTeamIds(supabase: SupabaseClient, userId: string): Promise<string[]> {
+  const { data: orgs } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('user_id', userId)
+
+  const orgIds = (orgs ?? []).map((o) => o.id)
+  if (!orgIds.length) return []
+
+  const { data: teams } = await supabase
+    .from('teams')
+    .select('id')
+    .in('organization_id', orgIds)
+
+  return (teams ?? []).map((t) => t.id)
+}
 
 export async function getMyTeams() {
   const supabase = await createClient()
@@ -14,15 +55,15 @@ export async function getMyTeams() {
     .select('id')
     .eq('user_id', user.id)
 
-  const orgIds = (orgs || []).map((o: any) => o.id)
-  if (orgIds.length === 0) return []
+  const orgIds = (orgs ?? []).map((o) => o.id)
+  if (!orgIds.length) return []
 
-  const { data: teams } = await supabase
+  const { data } = await supabase
     .from('teams')
     .select('id, name, age_group, travel_radius_miles')
     .in('organization_id', orgIds)
 
-  return teams || []
+  return data ?? []
 }
 
 export async function getDiscoverFeed() {
@@ -30,23 +71,8 @@ export async function getDiscoverFeed() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  // Get all of the current user's team IDs to exclude their own posts
-  const { data: orgs } = await supabase
-    .from('organizations')
-    .select('id')
-    .eq('user_id', user.id)
+  const myTeamIds = await getMyTeamIds(supabase, user.id)
 
-  const myTeamIds: string[] = []
-  if (orgs && orgs.length > 0) {
-    const orgIds = orgs.map((o: any) => o.id)
-    const { data: myTeams } = await supabase
-      .from('teams')
-      .select('id')
-      .in('organization_id', orgIds)
-    if (myTeams) myTeamIds.push(...myTeams.map(t => t.id))
-  }
-
-  // Fetch all open availability posts from other teams
   let query = supabase
     .from('availability_posts')
     .select(`
@@ -77,11 +103,11 @@ export async function getDiscoverFeed() {
     query = query.not('team_id', 'in', `(${myTeamIds.join(',')})`)
   }
 
-  const { data: posts } = await query
-  return posts || []
+  const { data } = await query
+  return data ?? []
 }
 
-export async function sendGameRequest(formData: FormData) {
+export async function sendGameRequest(formData: FormData): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -95,10 +121,9 @@ export async function sendGameRequest(formData: FormData) {
   const game_format = formData.get('game_format') as string
 
   if (!requester_team_id || !recipient_team_id || !proposed_date) {
-    return { error: 'Required fields missing.' }
+    redirect('/dashboard/discover?error=Required+fields+missing')
   }
 
-  // Insert game request
   const { data: request, error } = await supabase
     .from('game_requests')
     .insert({
@@ -114,9 +139,10 @@ export async function sendGameRequest(formData: FormData) {
     .select()
     .single()
 
-  if (error) return { error: error.message }
+  if (error) {
+    redirect(`/dashboard/discover?error=${encodeURIComponent(error.message)}`)
+  }
 
-  // Create a conversation thread
   await supabase
     .from('conversations')
     .insert({
