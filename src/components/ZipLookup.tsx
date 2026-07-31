@@ -25,7 +25,7 @@ const labelStyle: React.CSSProperties = {
 export function ZipLookup() {
   const [zip, setZip] = useState('')
   const [city, setCity] = useState('')
-  const [state, setState] = useState('IN')
+  const [state, setState] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'found' | 'error'>('idle')
 
   async function handleZipChange(value: string) {
