@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendRequestDecisionEmail } from '@/lib/email'
+import { generateICS } from '@/lib/ics'
 
 export async function getGameRequests() {
   const supabase = await createClient()
@@ -75,12 +77,67 @@ export async function updateRequestStatus(requestId: string, status: 'accepted' 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
+  // Fetch request details for email + ICS
+  const { data: req } = await supabase
+    .from('game_requests')
+    .select('requester_team_id, recipient_team_id, proposed_date, game_format, num_games')
+    .eq('id', requestId)
+    .single()
+
   const { error } = await supabase
     .from('game_requests')
     .update({ status })
     .eq('id', requestId)
 
   if (error) return { error: error.message }
+
+  // Send email to the requester (they get the decision)
+  if (req) {
+    try {
+      const { data: requesterTeam } = await supabase
+        .from('teams')
+        .select('name, organizations(name, user_id)')
+        .eq('id', req.requester_team_id)
+        .single()
+
+      const { data: recipientTeam } = await supabase
+        .from('teams')
+        .select('name, organizations(name)')
+        .eq('id', req.recipient_team_id)
+        .single()
+
+      const requesterOrg = (requesterTeam?.organizations as any)
+      const requesterUserId = requesterOrg?.user_id
+
+      if (requesterUserId) {
+        const { data: { user: requesterUser } } = await supabase.auth.admin.getUserById(requesterUserId)
+        if (requesterUser?.email) {
+          let icsString: string | undefined
+
+          if (status === 'accepted') {
+            icsString = generateICS({
+              uid: requestId,
+              title: `Game vs ${(recipientTeam?.organizations as any)?.name ?? 'Opponent'}`,
+              description: `${req.num_games} game ${req.game_format} — confirmed via FieldPass`,
+              date: req.proposed_date,
+            })
+          }
+
+          await sendRequestDecisionEmail({
+            recipientEmail: requesterUser.email,
+            recipientOrgName: requesterOrg?.name ?? '',
+            otherOrgName: (recipientTeam?.organizations as any)?.name ?? '',
+            decision: status,
+            proposedDate: req.proposed_date,
+            icsAttachment: icsString,
+          })
+        }
+      }
+    } catch (e) {
+      console.error('[updateRequestStatus] email error:', e)
+    }
+  }
+
   revalidatePath('/dashboard/requests')
   return { success: true }
 }

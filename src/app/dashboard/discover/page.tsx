@@ -1,4 +1,6 @@
 import { getDiscoverFeed, getMyTeams } from './actions'
+import { DiscoverFilterBar } from '@/components/DiscoverFilterBar'
+import { Suspense } from 'react'
 import Link from 'next/link'
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -29,18 +31,37 @@ function parseAgeGroup(ageGroup: string): { num: string; suffix: string } {
   return { num: ageGroup, suffix: '' }
 }
 
-export default async function DiscoverPage() {
-  const [posts, myTeams] = await Promise.all([
-    getDiscoverFeed(),
+interface PageProps {
+  searchParams: Promise<{
+    age?: string
+    format?: string
+    from?: string
+    to?: string
+  }>
+}
+
+export default async function DiscoverPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const ageFilter = params.age ?? ''
+  const formatFilter = params.format ?? ''
+  const dateFrom = params.from ?? ''
+  const dateTo = params.to ?? ''
+
+  const [allPosts, myTeams] = await Promise.all([
+    getDiscoverFeed({ gameFormat: formatFilter, dateFrom, dateTo }),
     getMyTeams(),
   ])
+
+  // Age group filter on joined column — done in-memory
+  const posts = ageFilter
+    ? allPosts.filter((p: any) => p.teams?.age_group === ageFilter)
+    : allPosts
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
 
       {/* Page header */}
-      <div className="relative overflow-hidden mb-6">
-        {/* Subtle green glow */}
+      <div className="relative overflow-hidden mb-5">
         <div
           className="absolute pointer-events-none"
           style={{
@@ -60,6 +81,11 @@ export default async function DiscoverPage() {
         </p>
       </div>
 
+      {/* Filter bar */}
+      <Suspense>
+        <DiscoverFilterBar />
+      </Suspense>
+
       {/* Feed */}
       {posts.length === 0 ? (
         <div
@@ -67,10 +93,10 @@ export default async function DiscoverPage() {
           style={{ border: '1px dashed rgba(255,255,255,0.1)' }}
         >
           <p className="text-sm" style={{ color: 'var(--fp-muted)' }}>
-            No availability posted by other programs yet.
+            No availability matches your filters.
           </p>
           <p className="text-xs mt-2" style={{ color: 'var(--fp-dim)' }}>
-            Check back soon — or invite programs to join FieldPass.
+            Try adjusting the age, format, or dates.
           </p>
         </div>
       ) : (
@@ -85,6 +111,7 @@ export default async function DiscoverPage() {
               : team?.play_level
               ? [team.play_level]
               : []
+            const isVerified = org?.verified === true
 
             return (
               <div
@@ -136,12 +163,32 @@ export default async function DiscoverPage() {
 
                 {/* Body */}
                 <div>
-                  {/* Org name */}
+                  {/* Org name + verified badge */}
                   <div
                     className="flex items-center gap-1.5 mb-0.5"
                     style={{ fontSize: 15, fontWeight: 700, color: '#f0f6ff', letterSpacing: '-0.01em' }}
                   >
                     {org?.name ?? team?.name ?? 'Unknown Program'}
+                    {isVerified && (
+                      <span
+                        title="Verified program"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          background: '#1db954',
+                          color: '#07111d',
+                          fontSize: 9,
+                          fontWeight: 900,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ✓
+                      </span>
+                    )}
                   </div>
 
                   {/* Location */}

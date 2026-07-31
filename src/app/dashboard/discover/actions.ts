@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
+import { sendNewRequestEmail } from '@/lib/email'
 
 async function createClient() {
   const cookieStore = await cookies()
@@ -66,7 +67,14 @@ export async function getMyTeams() {
   return data ?? []
 }
 
-export async function getDiscoverFeed() {
+export interface DiscoverFilters {
+  ageGroup?: string
+  gameFormat?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+export async function getDiscoverFeed(filters: DiscoverFilters = {}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
@@ -92,7 +100,8 @@ export async function getDiscoverFeed() {
         organizations (
           name,
           city,
-          state
+          state,
+          verified
         )
       ),
       fields (
@@ -108,6 +117,16 @@ export async function getDiscoverFeed() {
 
   if (myTeamIds.length > 0) {
     query = query.not('team_id', 'in', `(${myTeamIds.join(',')})`)
+  }
+
+  if (filters.gameFormat) {
+    query = query.eq('game_format', filters.gameFormat)
+  }
+  if (filters.dateFrom) {
+    query = query.gte('date_end', filters.dateFrom)
+  }
+  if (filters.dateTo) {
+    query = query.lte('date_start', filters.dateTo)
   }
 
   const { data } = await query
@@ -172,6 +191,40 @@ export async function sendGameRequest(formData: FormData): Promise<void> {
       team_2_id: recipient_team_id,
       game_request_id: request.id,
     })
+
+  // Email notification to recipient org
+  try {
+    const { data: recipientTeam } = await supabase
+      .from('teams')
+      .select('name, age_group, organizations(name, user_id)')
+      .eq('id', recipient_team_id)
+      .single()
+
+    const { data: requesterTeam } = await supabase
+      .from('teams')
+      .select('name, organizations(name)')
+      .eq('id', requester_team_id)
+      .single()
+
+    const recipientOrg = (recipientTeam?.organizations as any)
+    const recipientUserId = recipientOrg?.user_id
+
+    if (recipientUserId) {
+      const { data: { user: recipientUser } } = await supabase.auth.admin.getUserById(recipientUserId)
+      if (recipientUser?.email) {
+        await sendNewRequestEmail({
+          recipientEmail: recipientUser.email,
+          recipientOrgName: recipientOrg?.name ?? '',
+          requesterOrgName: (requesterTeam?.organizations as any)?.name ?? '',
+          requesterTeamName: requesterTeam?.name ?? '',
+          proposedDate: proposed_date,
+          gameFormat: game_format,
+        })
+      }
+    }
+  } catch (e) {
+    console.error('[sendGameRequest] email error:', e)
+  }
 
   revalidatePath('/dashboard/discover')
   redirect('/dashboard/requests')
