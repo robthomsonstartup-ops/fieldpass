@@ -130,7 +130,7 @@ export async function createTeam(
     organization_id: organizationId,
     name: teamName,
     age_group: ageGroup,
-    play_level: validPlayLevels.join(", "),
+    play_level: validPlayLevels,
     travel_radius_miles: Math.round(travelRadius),
   });
 

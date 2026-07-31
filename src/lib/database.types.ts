@@ -42,7 +42,7 @@ export interface Database {
           organization_id: string
           name: string
           age_group: string
-          play_level: string | null
+          play_level: string[] | null
           travel_radius_miles: number | null
           status: string | null
           created_at: string
@@ -52,7 +52,7 @@ export interface Database {
           organization_id: string
           name: string
           age_group: string
-          play_level?: string | null
+          play_level?: string[] | null
           travel_radius_miles?: number | null
           status?: string | null
           created_at?: string
@@ -62,7 +62,7 @@ export interface Database {
           organization_id?: string
           name?: string
           age_group?: string
-          play_level?: string | null
+          play_level?: string[] | null
           travel_radius_miles?: number | null
           status?: string | null
           created_at?: string
