@@ -76,10 +76,51 @@ export interface Database {
           }
         ]
       }
+      fields: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          address: string | null
+          city: string | null
+          state: string
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          address?: string | null
+          city?: string | null
+          state?: string
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          address?: string | null
+          city?: string | null
+          state?: string
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fields_organization_id_fkey"
+            columns: ["organization_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       availability_posts: {
         Row: {
           id: string
           team_id: string
+          field_id: string | null
           date_start: string
           date_end: string
           game_format: string
@@ -92,6 +133,7 @@ export interface Database {
         Insert: {
           id?: string
           team_id: string
+          field_id?: string | null
           date_start: string
           date_end: string
           game_format: string
@@ -104,6 +146,7 @@ export interface Database {
         Update: {
           id?: string
           team_id?: string
+          field_id?: string | null
           date_start?: string
           date_end?: string
           game_format?: string

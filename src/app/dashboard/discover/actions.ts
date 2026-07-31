@@ -94,6 +94,13 @@ export async function getDiscoverFeed() {
           city,
           state
         )
+      ),
+      fields (
+        id,
+        name,
+        address,
+        city,
+        state
       )
     `)
     .eq('status', 'open')

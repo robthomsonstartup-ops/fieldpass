@@ -51,6 +51,23 @@ export async function getMyTeams() {
   return data ?? []
 }
 
+export async function getMyFields() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const orgIds = await getMyOrgIds(supabase, user.id)
+  if (!orgIds.length) return []
+
+  const { data } = await supabase
+    .from('fields')
+    .select('id, name, city, state')
+    .in('organization_id', orgIds)
+    .order('name', { ascending: true })
+
+  return data ?? []
+}
+
 export async function getMyAvailabilityPosts() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -72,7 +89,8 @@ export async function getMyAvailabilityPosts() {
     .select(`
       id, date_start, date_end, game_format, host_type,
       num_games_desired, notes, status, created_at,
-      teams(id, name, age_group)
+      teams(id, name, age_group),
+      fields(id, name, address, city, state)
     `)
     .in('team_id', teamIds)
     .order('created_at', { ascending: false })
@@ -92,6 +110,7 @@ export async function createAvailabilityPost(formData: FormData): Promise<void> 
   const host_type = formData.get('host_type') as string
   const num_games_desired = formData.get('num_games_desired')
   const notes = formData.get('notes') as string
+  const field_id = formData.get('field_id') as string
 
   if (!team_id || !date_start || !date_end || !game_format) {
     redirect('/dashboard/availability/new?error=Required+fields+missing')
@@ -107,6 +126,7 @@ export async function createAvailabilityPost(formData: FormData): Promise<void> 
       host_type: host_type || null,
       num_games_desired: num_games_desired ? Number(num_games_desired) : null,
       notes: notes || null,
+      field_id: field_id || null,
       status: 'open',
     })
 

@@ -201,6 +201,22 @@ export default async function DiscoverPage() {
                     </div>
                   )}
 
+                  {/* Field / Diamond */}
+                  {post.fields && (
+                    <div
+                      className="flex items-center gap-1.5 mt-2"
+                      style={{ fontSize: 11, color: 'rgba(29,185,84,0.7)' }}
+                    >
+                      <span>⬡</span>
+                      <span style={{ fontWeight: 600 }}>{post.fields.name}</span>
+                      {post.fields.city && (
+                        <span style={{ color: 'var(--fp-dim)' }}>
+                          — {post.fields.city}, {post.fields.state}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {post.notes && (
                     <p
                       className="mt-2.5 pt-2.5"

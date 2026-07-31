@@ -43,6 +43,7 @@ export default async function DashboardLayout({
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: '⬡' },
     { href: '/dashboard/availability', label: 'Availability', icon: '📅' },
+    { href: '/dashboard/fields', label: 'Fields', icon: '🏟️' },
     { href: '/dashboard/discover', label: 'Discover', icon: '🔍' },
     { href: '/dashboard/requests', label: 'Requests', icon: '📥', badge: pendingCount },
   ]

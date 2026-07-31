@@ -26,6 +26,25 @@ body {
   font-family: var(--font-sans), -apple-system, 'Helvetica Neue', sans-serif;
 }
 
+/* Force dark styling on all native form controls */
+input,
+select,
+textarea {
+  color-scheme: dark;
+  color: #f0f6ff;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(232, 241, 251, 0.25);
+}
+
+option {
+  background-color: #0d1c2e;
+  color: #f0f6ff;
+}
+
 /* Discover card hover */
 .fp-card {
   background: #0d1c2e;
