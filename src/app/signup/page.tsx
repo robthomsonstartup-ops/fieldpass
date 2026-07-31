@@ -4,15 +4,15 @@ import { AuthForm } from "@/components/auth-form";
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-full flex-1 items-center justify-center bg-[#FAFAF8] px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-[#0B1D2A]/10 bg-white p-8 shadow-sm">
+    <div className="flex min-h-full flex-1 items-center justify-center px-4 py-12" style={{ background: '#07111d' }}>
+      <div className="w-full max-w-md rounded-2xl p-8" style={{ background: '#0d1c2e', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="mb-8 text-center">
-          <Link href="/" className="text-sm font-semibold tracking-wide text-[#DC2626]">
-            Fieldpass
+          <Link href="/" className="text-sm font-bold tracking-wide" style={{ color: '#1db954' }}>
+            FieldPass
           </Link>
-          <h1 className="mt-3 text-2xl font-bold text-[#0B1D2A]">Create your account</h1>
-          <p className="mt-2 text-sm text-[#6B7280]">
-            Get started with Fieldpass in a few steps.
+          <h1 className="mt-3 text-2xl font-extrabold" style={{ color: '#f0f6ff', letterSpacing: '-0.02em' }}>Create your account</h1>
+          <p className="mt-2 text-sm" style={{ color: 'var(--fp-muted)' }}>
+            Get started with FieldPass in a few steps.
           </p>
         </div>
 

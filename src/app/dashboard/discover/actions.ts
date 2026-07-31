@@ -124,6 +124,21 @@ export async function sendGameRequest(formData: FormData): Promise<void> {
     redirect('/dashboard/discover?error=Required+fields+missing')
   }
 
+  // Prevent duplicate pending requests for the same availability post
+  if (availability_post_id) {
+    const { data: existing } = await supabase
+      .from('game_requests')
+      .select('id')
+      .eq('requester_team_id', requester_team_id)
+      .eq('availability_post_id', availability_post_id)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existing) {
+      redirect('/dashboard/requests?notice=You+already+sent+a+request+for+this+availability')
+    }
+  }
+
   const { data: request, error } = await supabase
     .from('game_requests')
     .insert({

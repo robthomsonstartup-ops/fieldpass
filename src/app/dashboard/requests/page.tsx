@@ -1,12 +1,6 @@
 import { getGameRequests, updateRequestStatus } from './actions'
 import { revalidatePath } from 'next/cache'
-
-const STATUS_STYLES: Record<string, string> = {
-  pending:  'bg-yellow-100 text-yellow-800',
-  accepted: 'bg-green-100 text-green-800',
-  declined: 'bg-red-100 text-red-800',
-  cancelled:'bg-gray-100 text-gray-500',
-}
+import Link from 'next/link'
 
 const FORMAT_LABELS: Record<string, string> = {
   scrimmage: 'Scrimmage',
@@ -28,69 +22,181 @@ async function handleStatusUpdate(formData: FormData) {
   revalidatePath('/dashboard/requests')
 }
 
-function RequestCard({ request, direction }: { request: any; direction: 'incoming' | 'outgoing' }) {
-  const otherTeam = direction === 'incoming'
-    ? request.requester_team
-    : request.recipient_team
+function RequestCard({
+  request,
+  direction,
+}: {
+  request: any
+  direction: 'incoming' | 'outgoing'
+}) {
+  const otherTeam =
+    direction === 'incoming' ? request.requester_team : request.recipient_team
   const otherOrg = otherTeam?.organizations
 
+  const isAccepted = request.status === 'accepted'
+  const isDeclined = request.status === 'declined'
+  const isPending = request.status === 'pending'
+
+  // Card border/bg based on status
+  const cardStyle: React.CSSProperties = isAccepted
+    ? {
+        background: 'rgba(29,185,84,0.06)',
+        border: '1px solid rgba(29,185,84,0.18)',
+      }
+    : isDeclined
+    ? {
+        background: 'rgba(220,38,38,0.04)',
+        border: '1px solid rgba(220,38,38,0.12)',
+      }
+    : direction === 'incoming' && isPending
+    ? {
+        background: 'rgba(217,119,6,0.06)',
+        border: '1px solid rgba(217,119,6,0.2)',
+      }
+    : {
+        background: '#0d1c2e',
+        border: '1px solid rgba(255,255,255,0.07)',
+      }
+
+  const statusDotColor = isAccepted
+    ? '#1db954'
+    : isDeclined
+    ? '#dc2626'
+    : direction === 'incoming'
+    ? '#d97706'
+    : 'rgba(232,241,251,0.3)'
+
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5">
+    <div className="rounded-xl p-4" style={cardStyle}>
       <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <span className="font-semibold text-gray-900">{otherOrg?.name}</span>
-            {otherTeam?.age_group && (
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                {otherTeam.age_group}
+        {/* Left: org + meta */}
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          {/* Status dot */}
+          <div
+            className="flex-shrink-0 rounded-full mt-1.5"
+            style={{ width: 8, height: 8, background: statusDotColor }}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+              <span
+                className="font-bold"
+                style={{ fontSize: 14, color: '#f0f6ff' }}
+              >
+                {otherOrg?.name ?? otherTeam?.name ?? 'Unknown Program'}
               </span>
+              {otherTeam?.age_group && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'var(--fp-dim)',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 4,
+                    padding: '1px 7px',
+                  }}
+                >
+                  {otherTeam.age_group}
+                </span>
+              )}
+            </div>
+            {otherOrg?.city && (
+              <p style={{ fontSize: 11, color: 'var(--fp-dim)' }}>
+                {otherOrg.city}, {otherOrg.state}
+              </p>
             )}
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[request.status] || 'bg-gray-100 text-gray-600'}`}>
-              {request.status}
-            </span>
           </div>
-          {otherOrg?.city && (
-            <p className="text-xs text-gray-400">{otherOrg.city}, {otherOrg.state}</p>
-          )}
         </div>
+
+        {/* Right: date + games */}
         <div className="text-right shrink-0">
-          <p className="text-sm font-medium text-gray-700">{formatDate(request.proposed_date)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {request.num_games} game{request.num_games !== 1 ? 's' : ''} · {FORMAT_LABELS[request.game_format] || request.game_format}
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#f0f6ff' }}>
+            {formatDate(request.proposed_date)}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--fp-dim)', marginTop: 2 }}>
+            {request.num_games} game{request.num_games !== 1 ? 's' : ''} ·{' '}
+            {FORMAT_LABELS[request.game_format] || request.game_format}
           </p>
         </div>
       </div>
 
+      {/* Message */}
       {request.message && (
-        <p className="mt-3 text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+        <p
+          className="mt-3 rounded-lg px-3 py-2"
+          style={{
+            fontSize: 12,
+            color: 'var(--fp-muted)',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
           &ldquo;{request.message}&rdquo;
         </p>
       )}
 
-      {direction === 'incoming' && request.status === 'pending' && (
-        <div className="mt-4 flex gap-2">
-          <form action={handleStatusUpdate}>
-            <input type="hidden" name="request_id" value={request.id} />
-            <input type="hidden" name="status" value="accepted" />
-            <button
-              type="submit"
-              className="bg-green-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-green-800 transition-colors"
-            >
-              Accept
-            </button>
-          </form>
-          <form action={handleStatusUpdate}>
-            <input type="hidden" name="request_id" value={request.id} />
-            <input type="hidden" name="status" value="declined" />
-            <button
-              type="submit"
-              className="border border-gray-300 text-gray-600 text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Decline
-            </button>
-          </form>
-        </div>
-      )}
+      {/* Next action */}
+      <div className="mt-3 flex items-center gap-2">
+        {direction === 'incoming' && isPending && (
+          <>
+            <form action={handleStatusUpdate}>
+              <input type="hidden" name="request_id" value={request.id} />
+              <input type="hidden" name="status" value="accepted" />
+              <button
+                type="submit"
+                className="text-xs font-bold px-3 py-1.5 rounded-md transition-colors"
+                style={{
+                  background: 'rgba(29,185,84,0.15)',
+                  border: '1px solid rgba(29,185,84,0.35)',
+                  color: '#1db954',
+                }}
+              >
+                Accept
+              </button>
+            </form>
+            <form action={handleStatusUpdate}>
+              <input type="hidden" name="request_id" value={request.id} />
+              <input type="hidden" name="status" value="declined" />
+              <button
+                type="submit"
+                className="text-xs font-semibold px-3 py-1.5 rounded-md transition-colors"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'var(--fp-muted)',
+                }}
+              >
+                Decline
+              </button>
+            </form>
+          </>
+        )}
+
+        {direction === 'outgoing' && isPending && (
+          <p style={{ fontSize: 11, color: 'var(--fp-dim)' }}>
+            Waiting for their response...
+          </p>
+        )}
+
+        {isAccepted && (
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#1db954' }}>
+            ✓ Game confirmed for {formatDate(request.proposed_date)}
+          </p>
+        )}
+
+        {isDeclined && direction === 'outgoing' && (
+          <Link
+            href="/dashboard/discover"
+            style={{ fontSize: 11, fontWeight: 600, color: 'var(--fp-muted)', textDecoration: 'none' }}
+          >
+            Find another team →
+          </Link>
+        )}
+
+        {isDeclined && direction === 'incoming' && (
+          <p style={{ fontSize: 11, color: 'var(--fp-dim)' }}>Request declined</p>
+        )}
+      </div>
     </div>
   )
 }
@@ -100,31 +206,49 @@ export default async function RequestsPage() {
   const pendingCount = incoming.filter((r: any) => r.status === 'pending').length
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Requests
+        <div className="flex items-center gap-3 mb-1">
+          <h1
+            className="text-2xl font-extrabold tracking-tight"
+            style={{ color: '#f0f6ff', letterSpacing: '-0.03em' }}
+          >
+            Requests
+          </h1>
           {pendingCount > 0 && (
-            <span className="ml-2 text-sm font-medium bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+            <span
+              className="text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(217,119,6,0.15)', color: '#d97706', border: '1px solid rgba(217,119,6,0.25)' }}
+            >
               {pendingCount} pending
             </span>
           )}
-        </h1>
-        <p className="text-gray-500 mt-1">Incoming and outgoing game requests.</p>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--fp-muted)' }}>
+          Incoming and outgoing game requests.
+        </p>
       </div>
 
-      <div className="space-y-8">
+      <div className="flex flex-col gap-8">
         {/* Incoming */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-3"
+            style={{ color: 'var(--fp-dim)' }}
+          >
             Incoming ({incoming.length})
-          </h2>
+            <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+          </p>
           {incoming.length === 0 ? (
-            <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
-              <p className="text-gray-400 text-sm">No incoming requests yet.</p>
+            <div
+              className="text-center py-10 rounded-xl"
+              style={{ border: '1px dashed rgba(255,255,255,0.08)' }}
+            >
+              <p style={{ fontSize: 13, color: 'var(--fp-dim)' }}>No incoming requests yet.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {incoming.map((r: any) => (
                 <RequestCard key={r.id} request={r} direction="incoming" />
               ))}
@@ -134,18 +258,30 @@ export default async function RequestsPage() {
 
         {/* Outgoing */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <p
+            className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-3"
+            style={{ color: 'var(--fp-dim)' }}
+          >
             Outgoing ({outgoing.length})
-          </h2>
+            <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+          </p>
           {outgoing.length === 0 ? (
-            <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
-              <p className="text-gray-400 text-sm">You haven&apos;t sent any requests yet.</p>
-              <a href="/dashboard/discover" className="mt-3 inline-block text-sm font-medium text-green-700 hover:underline">
+            <div
+              className="text-center py-10 rounded-xl"
+              style={{ border: '1px dashed rgba(255,255,255,0.08)' }}
+            >
+              <p style={{ fontSize: 13, color: 'var(--fp-dim)' }}>
+                You haven&apos;t sent any requests yet.
+              </p>
+              <Link
+                href="/dashboard/discover"
+                style={{ display: 'inline-block', marginTop: 12, fontSize: 12, fontWeight: 600, color: '#1db954', textDecoration: 'none' }}
+              >
                 Browse availability →
-              </a>
+              </Link>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {outgoing.map((r: any) => (
                 <RequestCard key={r.id} request={r} direction="outgoing" />
               ))}
