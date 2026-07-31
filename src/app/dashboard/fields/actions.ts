@@ -62,27 +62,13 @@ export async function createField(formData: FormData): Promise<void> {
     redirect('/dashboard/fields/new?error=Field+name+is+required')
   }
 
-  const { data: orgs } = await supabase
-    .from('organizations')
-    .select('id')
-    .eq('user_id', user.id)
-    .limit(1)
-
-  const orgId = orgs?.[0]?.id
-  if (!orgId) {
-    redirect('/dashboard/fields/new?error=No+organization+found')
-  }
-
-  const { error } = await supabase
-    .from('fields')
-    .insert({
-      organization_id: orgId,
-      name,
-      address: address || null,
-      city: city || null,
-      state: state || 'IN',
-      notes: notes || null,
-    })
+  const { error } = await supabase.rpc('create_field_for_user', {
+    p_name: name,
+    p_address: address || null,
+    p_city: city || null,
+    p_state: state || 'IN',
+    p_notes: notes || null,
+  })
 
   if (error) {
     redirect(`/dashboard/fields/new?error=${encodeURIComponent(error.message)}`)
