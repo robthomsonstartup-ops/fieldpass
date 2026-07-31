@@ -72,7 +72,7 @@ export default async function RequestPage({
           <input
             type="number"
             name="num_games"
-            defaultValue={post.num_games_desired}
+            defaultValue={post.num_games_desired ?? undefined}
             min={1}
             max={10}
             className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
