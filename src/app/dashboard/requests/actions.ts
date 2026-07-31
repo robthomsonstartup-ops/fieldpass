@@ -1,0 +1,86 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+
+export async function getGameRequests() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { incoming: [], outgoing: [] }
+
+  // Get ALL orgs for this user (a user may have more than one)
+  const { data: orgs } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('user_id', user.id)
+
+  const orgIds = (orgs || []).map(o => o.id)
+  if (orgIds.length === 0) return { incoming: [], outgoing: [] }
+
+  // Get all teams across all orgs
+  const { data: myTeams } = await supabase
+    .from('teams')
+    .select('id')
+    .in('organization_id', orgIds)
+
+  const myTeamIds = (myTeams || []).map(t => t.id)
+  if (myTeamIds.length === 0) return { incoming: [], outgoing: [] }
+
+  // Fetch incoming and outgoing requests
+  const { data: incoming } = await supabase
+    .from('game_requests')
+    .select('id, status, proposed_date, num_games, game_format, message, created_at, requester_team_id, recipient_team_id')
+    .in('recipient_team_id', myTeamIds)
+    .order('created_at', { ascending: false })
+
+  const { data: outgoing } = await supabase
+    .from('game_requests')
+    .select('id, status, proposed_date, num_games, game_format, message, created_at, requester_team_id, recipient_team_id')
+    .in('requester_team_id', myTeamIds)
+    .order('created_at', { ascending: false })
+
+  // Collect all team IDs to look up
+  const allTeamIds = new Set<string>()
+  ;[...(incoming || []), ...(outgoing || [])].forEach(r => {
+    allTeamIds.add(r.requester_team_id)
+    allTeamIds.add(r.recipient_team_id)
+  })
+
+  if (allTeamIds.size === 0) return { incoming: [], outgoing: [] }
+
+  // Fetch teams + orgs in one query
+  const { data: teams } = await supabase
+    .from('teams')
+    .select('id, name, age_group, organizations(name, city, state)')
+    .in('id', Array.from(allTeamIds))
+
+  const teamMap: Record<string, any> = {}
+  ;(teams || []).forEach(t => { teamMap[t.id] = t })
+
+  const enrich = (requests: any[]) =>
+    requests.map(r => ({
+      ...r,
+      requester_team: teamMap[r.requester_team_id] || null,
+      recipient_team: teamMap[r.recipient_team_id] || null,
+    }))
+
+  return {
+    incoming: enrich(incoming || []),
+    outgoing: enrich(outgoing || []),
+  }
+}
+
+export async function updateRequestStatus(requestId: string, status: 'accepted' | 'declined') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { error } = await supabase
+    .from('game_requests')
+    .update({ status })
+    .eq('id', requestId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/dashboard/requests')
+  return { success: true }
+}
