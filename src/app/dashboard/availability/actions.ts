@@ -5,8 +5,8 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 
-function createClient() {
-  const cookieStore = cookies()
+async function createClient() {
+  const cookieStore = await cookies()
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,7 +25,9 @@ function createClient() {
   )
 }
 
-async function getMyOrgIds(supabase: ReturnType<typeof createClient>, userId: string) {
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+async function getMyOrgIds(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
     .from('organizations')
     .select('id')
@@ -34,7 +36,7 @@ async function getMyOrgIds(supabase: ReturnType<typeof createClient>, userId: st
 }
 
 export async function getMyTeams() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
@@ -50,7 +52,7 @@ export async function getMyTeams() {
 }
 
 export async function getMyAvailabilityPosts() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
@@ -79,7 +81,7 @@ export async function getMyAvailabilityPosts() {
 }
 
 export async function createAvailabilityPost(formData: FormData): Promise<void> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -116,7 +118,7 @@ export async function createAvailabilityPost(formData: FormData): Promise<void> 
 }
 
 export async function closeAvailabilityPost(postId: string): Promise<void> {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
