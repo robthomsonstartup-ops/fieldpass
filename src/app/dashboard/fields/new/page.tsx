@@ -1,4 +1,5 @@
 import { createField } from '../actions'
+import { ZipLookup } from '@/components/ZipLookup'
 
 interface PageProps {
   searchParams: Promise<{ error?: string }>
@@ -85,28 +86,8 @@ export default async function NewFieldPage({ searchParams }: PageProps) {
           />
         </div>
 
-        {/* City + State */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label style={labelStyle}>City</label>
-            <input
-              type="text"
-              name="city"
-              placeholder="e.g. Greenwood"
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>State</label>
-            <input
-              type="text"
-              name="state"
-              defaultValue="IN"
-              maxLength={2}
-              style={{ ...inputStyle, textTransform: 'uppercase' }}
-            />
-          </div>
-        </div>
+        {/* ZIP → City + State */}
+        <ZipLookup />
 
         {/* Notes */}
         <div>

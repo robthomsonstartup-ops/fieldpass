@@ -19,6 +19,7 @@ import {
   inputClassName,
   labelClassName,
 } from "@/lib/form-styles";
+import { ZipLookup } from "@/components/ZipLookup";
 
 const initialOrganizationState: OrganizationActionState = {};
 const initialTeamState: TeamActionState = {};
@@ -109,36 +110,7 @@ export function OnboardingFlow() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="city" className={labelClassName}>
-                  City
-                </label>
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  required
-                  className={inputClassName}
-                  placeholder="Austin"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="state" className={labelClassName}>
-                  State
-                </label>
-                <input
-                  id="state"
-                  name="state"
-                  type="text"
-                  required
-                  maxLength={2}
-                  className={inputClassName}
-                  placeholder="TX"
-                />
-              </div>
-            </div>
+            <ZipLookup />
 
             {organizationState.error ? (
               <p className="rounded-lg bg-[#DC2626]/10 px-3 py-2 text-sm text-[#DC2626]">
