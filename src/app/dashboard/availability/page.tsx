@@ -1,4 +1,4 @@
-import { getAvailabilityPosts } from './actions'
+import { getMyAvailabilityPosts } from './actions'
 import Link from 'next/link'
 
 const STATUS_STYLES: Record<string, string> = {
@@ -28,7 +28,7 @@ function formatDate(dateStr: string) {
 }
 
 export default async function AvailabilityPage() {
-  const posts = await getAvailabilityPosts()
+  const posts = await getMyAvailabilityPosts()
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
