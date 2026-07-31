@@ -1,4 +1,5 @@
 import { getOrgProfile, updateOrgProfile } from './actions'
+import { BillingSection } from '@/components/BillingSection'
 import { redirect } from 'next/navigation'
 
 const inputStyle = {
@@ -23,7 +24,7 @@ const labelStyle = {
 }
 
 interface PageProps {
-  searchParams: Promise<{ error?: string; saved?: string }>
+  searchParams: Promise<{ error?: string; saved?: string; upgraded?: string }>
 }
 
 export default async function SettingsPage({ searchParams }: PageProps) {
@@ -183,6 +184,24 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           </div>
         </div>
       </form>
+
+      {/* Billing */}
+      {params.upgraded && (
+        <div style={{
+          background: 'rgba(29,185,84,0.1)',
+          border: '1px solid rgba(29,185,84,0.25)',
+          borderRadius: 10, padding: '12px 16px',
+          fontSize: 14, color: '#1db954',
+          marginTop: 16,
+        }}>
+          🎉 You&apos;re now on a pro plan. Welcome to FieldPass Pro!
+        </div>
+      )}
+      <BillingSection
+        currentPlan={org?.subscription_plan ?? null}
+        currentStatus={org?.subscription_status ?? null}
+        hasStripeCustomer={!!org?.stripe_customer_id}
+      />
 
     </div>
   )

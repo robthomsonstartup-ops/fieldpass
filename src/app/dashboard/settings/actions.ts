@@ -11,7 +11,7 @@ export async function getOrgProfile() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: org } = await (supabase as any)
     .from('organizations')
-    .select('id, name, city, state, contact_email')
+    .select('id, name, city, state, contact_email, stripe_customer_id, subscription_status, subscription_plan')
     .eq('user_id', user.id)
     .single()
 
