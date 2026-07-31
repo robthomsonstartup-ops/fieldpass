@@ -26,6 +26,17 @@ body {
   font-family: var(--font-sans), -apple-system, 'Helvetica Neue', sans-serif;
 }
 
+/* Discover card hover */
+.fp-card {
+  background: #0d1c2e;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: border-color 0.15s, background 0.15s;
+}
+.fp-card:hover {
+  border-color: rgba(29, 185, 84, 0.3);
+  background: #0f2035;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

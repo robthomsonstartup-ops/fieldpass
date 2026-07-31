@@ -89,25 +89,13 @@ export default async function DiscoverPage() {
             return (
               <div
                 key={post.id}
-                className="group rounded-xl transition-all"
+                className="fp-card rounded-xl"
                 style={{
-                  background: '#0d1c2e',
-                  border: '1px solid rgba(255,255,255,0.07)',
                   padding: '16px 18px',
                   display: 'grid',
                   gridTemplateColumns: '54px 1fr auto',
                   gap: 14,
                   alignItems: 'start',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement
-                  el.style.borderColor = 'rgba(29,185,84,0.3)'
-                  el.style.background = '#0f2035'
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement
-                  el.style.borderColor = 'rgba(255,255,255,0.07)'
-                  el.style.background = '#0d1c2e'
                 }}
               >
                 {/* Age group block */}
