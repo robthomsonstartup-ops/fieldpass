@@ -46,6 +46,7 @@ export default async function DashboardLayout({
     { href: '/dashboard/fields', label: 'Fields', icon: '🏟️' },
     { href: '/dashboard/discover', label: 'Discover', icon: '🔍' },
     { href: '/dashboard/requests', label: 'Requests', icon: '📥', badge: pendingCount },
+    { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
   ]
 
   return (
@@ -97,18 +98,21 @@ export default async function DashboardLayout({
 
         {/* Right: avatar + sign out */}
         <div className="flex items-center gap-3">
-          <div
+          <Link
+            href="/dashboard/settings"
             className="hidden sm:flex items-center justify-center rounded-full text-xs font-bold"
             style={{
               width: 30,
               height: 30,
               background: 'linear-gradient(135deg, #1db954, #0d7740)',
               color: '#07111d',
+              textDecoration: 'none',
+              flexShrink: 0,
             }}
-            title={user?.email}
+            title={user?.email ?? 'Settings'}
           >
             {initials}
-          </div>
+          </Link>
           <form action={signOut}>
             <button
               type="submit"
