@@ -75,12 +75,38 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
           className="text-2xl font-extrabold tracking-tight"
           style={{ color: '#f0f6ff', letterSpacing: '-0.03em' }}
         >
-          Discover Teams
+          Discover
         </h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--fp-muted)' }}>
-          Browse open availability from programs near you.
+          Find teams, fields, and umpires near you.
         </p>
       </div>
+
+      {/* Discover category cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 28 }}>
+        {[
+          { href: '/dashboard/discover', label: 'Teams', icon: '⚾', desc: 'Open availability' },
+          { href: '/dashboard/discover/fields', label: 'Fields', icon: '🏟️', desc: 'Fields for rent' },
+          { href: '/dashboard/discover/umpires', label: 'Umpires', icon: '⚖️', desc: 'Book certified umps' },
+        ].map(cat => (
+          <Link key={cat.href} href={cat.href} style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: '#0d1c2e',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 12, padding: '14px 16px',
+              cursor: 'pointer',
+            }}>
+              <div style={{ fontSize: 20, marginBottom: 4 }}>{cat.icon}</div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#f0f6ff', marginBottom: 2 }}>{cat.label}</p>
+              <p style={{ fontSize: 11, color: 'rgba(232,241,251,0.4)' }}>{cat.desc}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(232,241,251,0.3)', marginBottom: 14 }}>
+        Teams — Open Availability
+      </p>
 
       {/* Filter bar */}
       <Suspense>

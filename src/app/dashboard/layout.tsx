@@ -59,6 +59,7 @@ export default async function DashboardLayout({
     { href: '/dashboard/availability', label: 'Availability', icon: '📅' },
     { href: '/dashboard/fields', label: 'Fields', icon: '🏟️' },
     { href: '/dashboard/discover', label: 'Discover', icon: '🔍' },
+    { href: '/dashboard/discover/umpires', label: 'Umpires', icon: '⚖️' },
     { href: '/dashboard/requests', label: 'Requests', icon: '📥', badge: pendingCount },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
   ]
