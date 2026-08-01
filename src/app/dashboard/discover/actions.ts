@@ -101,7 +101,9 @@ export async function getDiscoverFeed(filters: DiscoverFilters = {}) {
           name,
           city,
           state,
-          verified
+          verified,
+          primary_color,
+          secondary_color
         )
       ),
       fields (

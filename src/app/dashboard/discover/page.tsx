@@ -112,6 +112,8 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
               ? [team.play_level]
               : []
             const isVerified = org?.verified === true
+            const primaryColor: string = org?.primary_color ?? '#1db954'
+            const secondaryColor: string = org?.secondary_color ?? '#07111d'
 
             return (
               <div
@@ -123,14 +125,14 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
                   gridTemplateColumns: '54px 1fr auto',
                   gap: 14,
                   alignItems: 'start',
+                  borderLeft: `3px solid ${secondaryColor}`,
                 }}
               >
-                {/* Age group block */}
+                {/* Age group block — branded with org primary color */}
                 <div
                   className="flex flex-col items-center justify-center"
                   style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: primaryColor,
                     borderRadius: 7,
                     paddingTop: 8,
                     paddingBottom: 8,
@@ -140,7 +142,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
                     style={{
                       fontSize: 20,
                       fontWeight: 900,
-                      color: '#f0f6ff',
+                      color: '#ffffff',
                       letterSpacing: '-0.04em',
                       lineHeight: 1,
                     }}
@@ -151,7 +153,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
                     style={{
                       fontSize: 9,
                       fontWeight: 600,
-                      color: 'var(--fp-dim)',
+                      color: 'rgba(255,255,255,0.7)',
                       letterSpacing: '0.05em',
                       textTransform: 'uppercase',
                       marginTop: 2,

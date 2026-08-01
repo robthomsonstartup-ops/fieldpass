@@ -11,7 +11,7 @@ export async function getOrgProfile() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: org } = await (supabase as any)
     .from('organizations')
-    .select('id, name, city, state, contact_email, stripe_customer_id, subscription_status, subscription_plan')
+    .select('id, name, city, state, contact_email, stripe_customer_id, subscription_status, subscription_plan, primary_color, secondary_color')
     .eq('user_id', user.id)
     .single()
 
@@ -27,6 +27,8 @@ export async function updateOrgProfile(formData: FormData): Promise<void> {
   const city = (formData.get('city') as string)?.trim()
   const state = (formData.get('state') as string)?.trim().toUpperCase()
   const contact_email = (formData.get('contact_email') as string)?.trim()
+  const primary_color = (formData.get('primary_color') as string)?.trim() || null
+  const secondary_color = (formData.get('secondary_color') as string)?.trim() || null
 
   if (!name) {
     redirect('/dashboard/settings?error=Organization+name+is+required')
@@ -35,7 +37,7 @@ export async function updateOrgProfile(formData: FormData): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('organizations')
-    .update({ name, city: city || null, state: state || null, contact_email: contact_email || null })
+    .update({ name, city: city || null, state: state || null, contact_email: contact_email || null, primary_color, secondary_color })
     .eq('user_id', user.id)
 
   if (error) {
