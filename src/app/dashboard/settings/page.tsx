@@ -1,5 +1,6 @@
 import { getOrgProfile, updateOrgProfile } from './actions'
 import { BillingSection } from '@/components/BillingSection'
+import { OrgLogoUpload } from '@/components/OrgLogoUpload'
 import { redirect } from 'next/navigation'
 
 const inputStyle = {
@@ -34,6 +35,9 @@ export default async function SettingsPage({ searchParams }: PageProps) {
   if (!result) redirect('/login')
   const { org, email } = result
 
+  const primary = org?.primary_color ?? '#1e2d5e'
+  const secondary = org?.secondary_color ?? '#c8102e'
+
   return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px' }}>
 
@@ -43,7 +47,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           Settings
         </h1>
         <p style={{ fontSize: 14, color: 'rgba(232,241,251,0.4)' }}>
-          Manage your organization profile.
+          Manage your organization profile and brand.
         </p>
       </div>
 
@@ -71,7 +75,62 @@ export default async function SettingsPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      {/* Account info (read-only) */}
+      {/* ── Brand Identity ── */}
+      {org?.id && (
+        <div style={{
+          background: '#0d1c2e',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 14, padding: '20px 22px',
+          marginBottom: 16,
+        }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#f0f6ff', marginBottom: 4 }}>Brand Identity</h2>
+          <p style={{ fontSize: 12, color: 'rgba(232,241,251,0.3)', marginBottom: 20 }}>
+            Upload your logo — colors are extracted automatically.
+          </p>
+
+          <OrgLogoUpload
+            orgId={org.id}
+            currentLogoUrl={org.logo_url ?? null}
+            currentPrimary={org.primary_color ?? null}
+            currentSecondary={org.secondary_color ?? null}
+          />
+
+          {/* Static discover card preview (server-rendered; reflects saved colors) */}
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(232,241,251,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+              Discover card preview
+            </p>
+            <div style={{
+              background: '#0a1826',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 12,
+              borderLeft: `3px solid ${secondary}`,
+              padding: '14px 16px',
+              display: 'grid',
+              gridTemplateColumns: '48px 1fr',
+              gap: 12,
+              alignItems: 'center',
+            }}>
+              {/* Age badge */}
+              <div style={{
+                background: primary,
+                borderRadius: 7,
+                height: 48,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1 }}>16</span>
+                <span style={{ fontSize: 8, fontWeight: 600, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 1 }}>U</span>
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#f0f6ff', margin: 0, marginBottom: 2 }}>{org.name}</p>
+                {org.city && <p style={{ fontSize: 11, color: 'rgba(232,241,251,0.35)', margin: 0 }}>{org.city}, {org.state}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Account info ── */}
       <div style={{
         background: '#0d1c2e',
         border: '1px solid rgba(255,255,255,0.07)',
@@ -81,11 +140,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
         <h2 style={{ fontSize: 14, fontWeight: 700, color: '#f0f6ff', marginBottom: 16 }}>Account</h2>
         <div>
           <label style={labelStyle}>Email</label>
-          <div style={{
-            ...inputStyle,
-            color: 'rgba(232,241,251,0.35)',
-            cursor: 'not-allowed',
-          }}>
+          <div style={{ ...inputStyle, color: 'rgba(232,241,251,0.35)', cursor: 'not-allowed' }}>
             {email}
           </div>
           <p style={{ fontSize: 11, color: 'rgba(232,241,251,0.25)', marginTop: 6 }}>
@@ -94,7 +149,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Org profile form */}
+      {/* ── Org profile form ── */}
       <form action={updateOrgProfile}>
         <div style={{
           background: '#0d1c2e',
@@ -105,168 +160,54 @@ export default async function SettingsPage({ searchParams }: PageProps) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-            {/* Name */}
             <div>
               <label style={labelStyle} htmlFor="name">Organization Name</label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                defaultValue={org?.name ?? ''}
-                placeholder="e.g. Top Tier Indiana"
-                style={inputStyle}
-              />
+              <input id="name" name="name" type="text" required
+                defaultValue={org?.name ?? ''} placeholder="e.g. Top Tier Indiana"
+                style={inputStyle} />
             </div>
 
-            {/* Contact email */}
             <div>
               <label style={labelStyle} htmlFor="contact_email">Contact Email</label>
-              <input
-                id="contact_email"
-                name="contact_email"
-                type="email"
-                defaultValue={org?.contact_email ?? ''}
-                placeholder="coach@example.com"
-                style={inputStyle}
-              />
+              <input id="contact_email" name="contact_email" type="email"
+                defaultValue={org?.contact_email ?? ''} placeholder="coach@example.com"
+                style={inputStyle} />
               <p style={{ fontSize: 11, color: 'rgba(232,241,251,0.25)', marginTop: 6 }}>
                 Shown to other programs when they view your posts.
               </p>
             </div>
 
-            {/* City + State */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 12 }}>
               <div>
                 <label style={labelStyle} htmlFor="city">City</label>
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  defaultValue={org?.city ?? ''}
-                  placeholder="Greenwood"
-                  style={inputStyle}
-                />
+                <input id="city" name="city" type="text"
+                  defaultValue={org?.city ?? ''} placeholder="Greenwood"
+                  style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle} htmlFor="state">State</label>
-                <input
-                  id="state"
-                  name="state"
-                  type="text"
-                  maxLength={2}
-                  defaultValue={org?.state ?? ''}
-                  placeholder="IN"
-                  style={{ ...inputStyle, textTransform: 'uppercase' }}
-                />
-              </div>
-            </div>
-
-            {/* Brand Colors */}
-            <div>
-              <label style={labelStyle}>Brand Colors</label>
-              <p style={{ fontSize: 11, color: 'rgba(232,241,251,0.25)', marginBottom: 10 }}>
-                Used to customize your cards in the discover feed.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {/* Primary */}
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(232,241,251,0.4)', marginBottom: 6 }}>Primary</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="color"
-                      name="primary_color"
-                      defaultValue={org?.primary_color ?? '#1db954'}
-                      style={{
-                        width: 40, height: 40,
-                        borderRadius: 8,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        background: 'none',
-                        cursor: 'pointer',
-                        padding: 2,
-                      }}
-                    />
-                    <input
-                      type="text"
-                      name="primary_color_text"
-                      readOnly
-                      defaultValue={org?.primary_color ?? '#1db954'}
-                      style={{ ...inputStyle, width: 90, fontFamily: 'monospace', fontSize: 12 }}
-                    />
-                  </div>
-                </div>
-                {/* Secondary */}
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(232,241,251,0.4)', marginBottom: 6 }}>Secondary</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="color"
-                      name="secondary_color"
-                      defaultValue={org?.secondary_color ?? '#07111d'}
-                      style={{
-                        width: 40, height: 40,
-                        borderRadius: 8,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        background: 'none',
-                        cursor: 'pointer',
-                        padding: 2,
-                      }}
-                    />
-                    <input
-                      type="text"
-                      name="secondary_color_text"
-                      readOnly
-                      defaultValue={org?.secondary_color ?? '#07111d'}
-                      style={{ ...inputStyle, width: 90, fontFamily: 'monospace', fontSize: 12 }}
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* Live preview */}
-              {/* Live preview — mirrors the discover card badge */}
-              <div style={{ marginTop: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: 12, borderLeft: `3px solid ${org?.secondary_color ?? '#c8102e'}` }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 7,
-                    background: org?.primary_color ?? '#1e2d5e',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <span style={{ fontSize: 16, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.04em', lineHeight: 1 }}>16</span>
-                    <span style={{ fontSize: 8, fontWeight: 600, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 1 }}>U</span>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#f0f6ff' }}>{org?.name ?? 'Your Program'}</p>
-                    <p style={{ fontSize: 11, color: 'rgba(232,241,251,0.35)' }}>Discover card preview</p>
-                  </div>
-                </div>
+                <input id="state" name="state" type="text" maxLength={2}
+                  defaultValue={org?.state ?? ''} placeholder="IN"
+                  style={{ ...inputStyle, textTransform: 'uppercase' }} />
               </div>
             </div>
 
           </div>
 
-          {/* Submit */}
           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              type="submit"
-              style={{
-                background: '#1db954',
-                color: '#07111d',
-                fontSize: 14,
-                fontWeight: 800,
-                borderRadius: 8,
-                padding: '10px 24px',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
+            <button type="submit" style={{
+              background: primary, color: '#ffffff',
+              fontSize: 14, fontWeight: 800,
+              borderRadius: 8, padding: '10px 24px',
+              border: 'none', cursor: 'pointer',
+            }}>
               Save Changes
             </button>
           </div>
         </div>
       </form>
 
-      {/* Billing */}
+      {/* ── Billing ── */}
       {params.upgraded && (
         <div style={{
           background: 'rgba(29,185,84,0.1)',

@@ -2,6 +2,7 @@ import { getDiscoverFeed, getMyTeams } from './actions'
 import { DiscoverFilterBar } from '@/components/DiscoverFilterBar'
 import { Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const FORMAT_LABELS: Record<string, string> = {
   scrimmage: 'Scrimmage',
@@ -114,6 +115,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
             const isVerified = org?.verified === true
             const primaryColor: string = org?.primary_color ?? '#1db954'
             const secondaryColor: string = org?.secondary_color ?? '#07111d'
+            const logoUrl: string | null = org?.logo_url ?? null
 
             return (
               <div
@@ -165,11 +167,19 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
 
                 {/* Body */}
                 <div>
-                  {/* Org name + verified badge */}
+                  {/* Org name + logo + verified badge */}
                   <div
-                    className="flex items-center gap-1.5 mb-0.5"
+                    className="flex items-center gap-2 mb-0.5"
                     style={{ fontSize: 15, fontWeight: 700, color: '#f0f6ff', letterSpacing: '-0.01em' }}
                   >
+                    {logoUrl && (
+                      <div style={{
+                        width: 22, height: 22, borderRadius: 4, overflow: 'hidden',
+                        background: '#fff', flexShrink: 0, position: 'relative',
+                      }}>
+                        <Image src={logoUrl} alt="" fill sizes="22px" style={{ objectFit: 'contain', padding: 1 }} />
+                      </div>
+                    )}
                     {org?.name ?? team?.name ?? 'Unknown Program'}
                     {isVerified && (
                       <span

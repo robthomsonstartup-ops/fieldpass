@@ -103,7 +103,8 @@ export async function getDiscoverFeed(filters: DiscoverFilters = {}) {
           state,
           verified,
           primary_color,
-          secondary_color
+          secondary_color,
+          logo_url
         )
       ),
       fields (
