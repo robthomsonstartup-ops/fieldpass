@@ -123,23 +123,18 @@ export function OrgLogoUpload({ orgId, currentLogoUrl, currentPrimary, currentSe
     setSecondary(s)
     onColorsExtracted?.(p, s)
 
-    // ── 2. Upload to Storage ──
+    // ── 2. Upload via server API (bypasses RLS) ──
     setStatus('uploading')
     try {
-      const supabase = createClient()
-      const ext = file.name.split('.').pop() ?? 'png'
-      const path = `${orgId}/logo.${ext}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('org-logos')
-        .upload(path, file, { upsert: true, contentType: file.type })
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('org-logos')
-        .getPublicUrl(path)
+      const fd = new FormData()
+      fd.append('file', file)
+      const uploadRes = await fetch('/api/upload/logo', { method: 'POST', body: fd })
+      const uploadData = await uploadRes.json()
+      if (!uploadRes.ok) throw new Error(uploadData.error ?? 'Upload failed')
+      const publicUrl: string = uploadData.url
 
       // ── 3. Save logo URL + extracted colors to org ──
+      const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await (supabase as any)
         .from('organizations')
