@@ -4,6 +4,8 @@ import { signOut } from '@/app/auth/actions'
 import { Logo } from '@/components/Logo'
 import Image from 'next/image'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({
   children,
 }: {

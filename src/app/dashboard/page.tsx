@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
 
+export const dynamic = 'force-dynamic'
+
 const card = {
   background: '#0d1c2e',
   border: '1px solid rgba(255,255,255,0.07)',
