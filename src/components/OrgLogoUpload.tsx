@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 
 interface Props {
@@ -123,26 +122,18 @@ export function OrgLogoUpload({ orgId, currentLogoUrl, currentPrimary, currentSe
     setSecondary(s)
     onColorsExtracted?.(p, s)
 
-    // ── 2. Upload via server API (bypasses RLS) ──
+    // ── 2. Upload + save via server API (service role, bypasses RLS) ──
     setStatus('uploading')
     try {
       const fd = new FormData()
       fd.append('file', file)
+      fd.append('primary_color', p)
+      fd.append('secondary_color', s)
       const uploadRes = await fetch('/api/upload/logo', { method: 'POST', body: fd })
       const uploadData = await uploadRes.json()
       if (!uploadRes.ok) throw new Error(uploadData.error ?? 'Upload failed')
-      const publicUrl: string = uploadData.url
 
-      // ── 3. Save logo URL + extracted colors to org ──
-      const supabase = createClient()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (supabase as any)
-        .from('organizations')
-        .update({ logo_url: publicUrl, primary_color: p, secondary_color: s })
-        .eq('id', orgId)
-      if (dbError) throw dbError
-
-      setPreview(publicUrl)
+      setPreview(uploadData.url)
       setStatus('done')
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Upload failed.')

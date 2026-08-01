@@ -55,5 +55,25 @@ export async function POST(req: NextRequest) {
     .from('org-logos')
     .getPublicUrl(path)
 
+  // Also accept extracted colors to save in the same request
+  const primaryColor = formData.get('primary_color') as string | null
+  const secondaryColor = formData.get('secondary_color') as string | null
+
+  // Save logo URL + colors using service role (bypasses RLS)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: dbError } = await (admin as any)
+    .from('organizations')
+    .update({
+      logo_url: publicUrl,
+      ...(primaryColor ? { primary_color: primaryColor } : {}),
+      ...(secondaryColor ? { secondary_color: secondaryColor } : {}),
+    })
+    .eq('id', orgId)
+
+  if (dbError) {
+    console.error('[upload/logo] db update error:', dbError)
+    // Still return the URL even if DB update fails
+  }
+
   return NextResponse.json({ url: publicUrl })
 }

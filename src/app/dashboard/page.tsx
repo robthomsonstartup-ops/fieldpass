@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const card = {
   background: '#0d1c2e',
@@ -8,7 +9,7 @@ const card = {
   padding: '20px 22px',
 } as const
 
-const label = {
+const labelStyle = {
   fontSize: 11,
   fontWeight: 700,
   letterSpacing: '0.1em',
@@ -22,20 +23,26 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: orgs } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orgs } = await (supabase as any)
     .from('organizations')
-    .select('id, name, city, state')
+    .select('id, name, city, state, primary_color, secondary_color, logo_url')
     .eq('user_id', user!.id)
 
   const hasOrg = orgs && orgs.length > 0
   const org = orgs?.[0]
-  const orgIds = (orgs ?? []).map((o) => o.id)
+  const orgIds = (orgs ?? []).map((o: any) => o.id)
+
+  const primary: string = org?.primary_color ?? '#1db954'
+  const secondary: string = org?.secondary_color ?? '#0d7740'
+  const logoUrl: string | null = org?.logo_url ?? null
+  const orgName: string = org?.name ?? ''
 
   // Teams
   const { data: teams } = hasOrg
     ? await supabase.from('teams').select('id, name, age_group').in('organization_id', orgIds)
     : { data: [] }
-  const teamIds = (teams ?? []).map((t) => t.id)
+  const teamIds = (teams ?? []).map((t: any) => t.id)
 
   // Fields count
   const { count: fieldCount } = hasOrg
@@ -61,7 +68,7 @@ export default async function DashboardPage() {
         .limit(3)
     : { data: [] }
 
-  // Recent requests — incoming (last 3)
+  // Recent incoming requests (last 3)
   const { data: recentRequests } = teamIds.length > 0
     ? await supabase
         .from('game_requests')
@@ -87,12 +94,26 @@ export default async function DashboardPage() {
   return (
     <div style={{ maxWidth: 680, margin: '0 auto', padding: '36px 20px 48px' }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', color: '#f0f6ff', marginBottom: 4 }}>
-          {hasOrg ? `${greeting}, ${org?.name}` : `${greeting} 👋`}
-        </h1>
-        <p style={{ fontSize: 13, color: 'rgba(232,241,251,0.35)' }}>{user?.email}</p>
+      {/* Header — logo + greeting */}
+      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'center', gap: 16 }}>
+        {logoUrl && (
+          <div style={{
+            width: 56, height: 56, borderRadius: 12,
+            background: '#fff',
+            border: `2px solid ${primary}40`,
+            flexShrink: 0,
+            overflow: 'hidden',
+            position: 'relative',
+          }}>
+            <Image src={logoUrl} alt={orgName} fill sizes="56px" style={{ objectFit: 'contain', padding: 4 }} />
+          </div>
+        )}
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', color: '#f0f6ff', marginBottom: 3 }}>
+            {hasOrg ? `${greeting}, ${orgName}` : `${greeting} 👋`}
+          </h1>
+          <p style={{ fontSize: 13, color: 'rgba(232,241,251,0.35)' }}>{user?.email}</p>
+        </div>
       </div>
 
       {/* Pending alert */}
@@ -112,7 +133,7 @@ export default async function DashboardPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{pendingIncoming}</div>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#d97706' }}>
-                {pendingIncoming === 1 ? 'Game request waiting' : `Game requests waiting`} for your response
+                {pendingIncoming === 1 ? 'Game request waiting' : 'Game requests waiting'} for your response
               </span>
             </div>
             <span style={{ fontSize: 13, color: '#d97706' }}>Review →</span>
@@ -128,8 +149,8 @@ export default async function DashboardPage() {
             { label: 'Diamonds', value: fieldCount ?? 0 },
             { label: 'Posts', value: (recentPosts ?? []).length === 3 ? '3+' : recentPosts?.length ?? 0 },
           ].map((s) => (
-            <div key={s.label} style={card}>
-              <span style={label}>{s.label}</span>
+            <div key={s.label} style={{ ...card, borderTop: `3px solid ${primary}` }}>
+              <span style={labelStyle}>{s.label}</span>
               <div style={{ fontSize: 32, fontWeight: 900, color: '#f0f6ff', letterSpacing: '-0.04em', lineHeight: 1 }}>
                 {s.value}
               </div>
@@ -138,22 +159,22 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Setup checklist — only show if not fully done */}
+      {/* Setup checklist */}
       {!setupDone && (
         <div style={{ ...card, marginBottom: 16 }}>
-          <span style={label}>Getting started</span>
+          <span style={labelStyle}>Getting started</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {setupSteps.map((step) => (
               <Link key={step.label} href={step.done ? '#' : step.href} style={{ textDecoration: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                    background: step.done ? '#1db954' : 'rgba(255,255,255,0.06)',
+                    background: step.done ? primary : 'rgba(255,255,255,0.06)',
                     border: step.done ? 'none' : '1px solid rgba(255,255,255,0.12)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11,
                   }}>
-                    {step.done && <span style={{ color: '#07111d', fontWeight: 900 }}>✓</span>}
+                    {step.done && <span style={{ color: '#fff', fontWeight: 900 }}>✓</span>}
                   </div>
                   <span style={{
                     fontSize: 13, fontWeight: 600,
@@ -163,7 +184,7 @@ export default async function DashboardPage() {
                     {step.label}
                   </span>
                   {!step.done && (
-                    <span style={{ marginLeft: 'auto', fontSize: 11, color: '#1db954' }}>→</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 11, color: primary }}>→</span>
                   )}
                 </div>
               </Link>
@@ -174,17 +195,17 @@ export default async function DashboardPage() {
 
       {/* Quick actions */}
       <div style={{ ...card, marginBottom: 16 }}>
-        <span style={label}>Quick actions</span>
+        <span style={labelStyle}>Quick actions</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           <Link href="/dashboard/availability/new" style={{
-            background: '#1db954', color: '#07111d',
+            background: primary, color: '#ffffff',
             fontSize: 13, fontWeight: 800, borderRadius: 8,
             padding: '9px 18px', textDecoration: 'none',
           }}>+ Post Availability</Link>
           <Link href="/dashboard/discover" style={{
-            background: 'rgba(29,185,84,0.08)',
-            border: '1px solid rgba(29,185,84,0.25)',
-            color: '#1db954', fontSize: 13, fontWeight: 700,
+            background: 'rgba(255,255,255,0.04)',
+            border: `1px solid ${secondary}50`,
+            color: secondary, fontSize: 13, fontWeight: 700,
             borderRadius: 8, padding: '9px 18px', textDecoration: 'none',
           }}>Discover Teams →</Link>
           <Link href="/dashboard/fields/new" style={{
@@ -200,14 +221,14 @@ export default async function DashboardPage() {
       {(recentPosts ?? []).length > 0 && (
         <div style={{ ...card, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <span style={{ ...label, marginBottom: 0 }}>Recent availability</span>
-            <Link href="/dashboard/availability" style={{ fontSize: 12, color: '#1db954', textDecoration: 'none' }}>View all →</Link>
+            <span style={{ ...labelStyle, marginBottom: 0 }}>Recent availability</span>
+            <Link href="/dashboard/availability" style={{ fontSize: 12, color: primary, textDecoration: 'none' }}>View all →</Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {(recentPosts ?? []).map((post: any) => {
-              const from = new Date(post.date_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-              const to = new Date(post.date_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-              const isActive = post.status === 'active'
+              const from = new Date(post.date_start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              const to = new Date(post.date_end + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              const isOpen = post.status === 'open'
               return (
                 <div key={post.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -224,9 +245,9 @@ export default async function DashboardPage() {
                   <div style={{
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
                     borderRadius: 100, padding: '3px 8px',
-                    background: isActive ? 'rgba(29,185,84,0.12)' : 'rgba(255,255,255,0.05)',
-                    color: isActive ? '#1db954' : 'rgba(232,241,251,0.35)',
-                    border: `1px solid ${isActive ? 'rgba(29,185,84,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                    background: isOpen ? `${primary}18` : 'rgba(255,255,255,0.05)',
+                    color: isOpen ? primary : 'rgba(232,241,251,0.35)',
+                    border: `1px solid ${isOpen ? primary + '40' : 'rgba(255,255,255,0.08)'}`,
                   }}>
                     {post.status}
                   </div>
@@ -241,12 +262,12 @@ export default async function DashboardPage() {
       {(recentRequests ?? []).length > 0 && (
         <div style={card}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <span style={{ ...label, marginBottom: 0 }}>Recent requests</span>
-            <Link href="/dashboard/requests" style={{ fontSize: 12, color: '#1db954', textDecoration: 'none' }}>View all →</Link>
+            <span style={{ ...labelStyle, marginBottom: 0 }}>Recent requests</span>
+            <Link href="/dashboard/requests" style={{ fontSize: 12, color: primary, textDecoration: 'none' }}>View all →</Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {(recentRequests ?? []).map((req: any) => {
-              const statusColor = req.status === 'accepted' ? '#1db954' : req.status === 'declined' ? '#f87171' : '#d97706'
+              const statusColor = req.status === 'accepted' ? primary : req.status === 'declined' ? '#f87171' : '#d97706'
               const requesterName = req.teams?.organizations?.name ?? req.teams?.name ?? 'Unknown'
               return (
                 <div key={req.id} style={{
@@ -285,7 +306,7 @@ export default async function DashboardPage() {
             Create your organization and team to start finding games.
           </p>
           <Link href="/dashboard/onboarding" style={{
-            background: '#1db954', color: '#07111d',
+            background: primary, color: '#ffffff',
             fontSize: 14, fontWeight: 800, borderRadius: 9,
             padding: '12px 28px', textDecoration: 'none', display: 'inline-block',
           }}>Start Setup →</Link>
