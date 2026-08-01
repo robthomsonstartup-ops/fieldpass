@@ -23,11 +23,18 @@ function colorDistance(a: [number, number, number], b: [number, number, number])
 }
 
 function isNearWhite(r: number, g: number, b: number) {
-  return r > 220 && g > 220 && b > 220
+  return r > 200 && g > 200 && b > 200
 }
 
 function isNearBlack(r: number, g: number, b: number) {
-  return r < 30 && g < 30 && b < 30
+  return r < 40 && g < 40 && b < 40
+}
+
+// Skip grays / low-saturation neutrals
+function isNeutral(r: number, g: number, b: number) {
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  return (max - min) < 40 // small spread = gray/beige/neutral
 }
 
 function extractDominantColors(imgEl: HTMLImageElement): [string, string] {
@@ -46,6 +53,7 @@ function extractDominantColors(imgEl: HTMLImageElement): [string, string] {
     if (a < 128) continue // skip transparent
     if (isNearWhite(r, g, b)) continue
     if (isNearBlack(r, g, b)) continue
+    if (isNeutral(r, g, b)) continue
 
     // Quantize to 32-step buckets
     const qr = Math.round(r / 32) * 32

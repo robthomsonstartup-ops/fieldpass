@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/auth/actions'
 import { Logo } from '@/components/Logo'
+import Image from 'next/image'
 
 export default async function DashboardLayout({
   children,
@@ -11,19 +12,26 @@ export default async function DashboardLayout({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Get pending request count for badge
+  // Fetch org brand + pending count in parallel
   let pendingCount = 0
+  let orgBrand: { primary_color: string | null; secondary_color: string | null; logo_url: string | null; name: string | null } | null = null
+
   if (user) {
-    const { data: orgs } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: orgs } = await (supabase as any)
       .from('organizations')
-      .select('id')
+      .select('id, name, primary_color, secondary_color, logo_url')
       .eq('user_id', user.id)
-    const orgIds = (orgs ?? []).map((o) => o.id)
-    if (orgIds.length > 0) {
+      .limit(1)
+
+    const org = orgs?.[0] ?? null
+    orgBrand = org
+
+    if (org?.id) {
       const { data: teams } = await supabase
         .from('teams')
         .select('id')
-        .in('organization_id', orgIds)
+        .eq('organization_id', org.id)
       const teamIds = (teams ?? []).map((t) => t.id)
       if (teamIds.length > 0) {
         const { count } = await supabase
@@ -36,9 +44,13 @@ export default async function DashboardLayout({
     }
   }
 
-  const initials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
-    : '??'
+  const primary = orgBrand?.primary_color ?? '#1db954'
+  const secondary = orgBrand?.secondary_color ?? '#0d7740'
+  const logoUrl = orgBrand?.logo_url ?? null
+  const orgName = orgBrand?.name ?? null
+  const initials = orgName
+    ? orgName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+    : (user?.email?.slice(0, 2).toUpperCase() ?? '?')
 
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: '⬡' },
@@ -50,7 +62,16 @@ export default async function DashboardLayout({
   ]
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#07111d', color: '#f0f6ff' }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        background: '#07111d',
+        color: '#f0f6ff',
+        // Inject org brand as CSS vars — all children inherit
+        '--org-primary': primary,
+        '--org-secondary': secondary,
+      } as React.CSSProperties}
+    >
 
       {/* ── TOP NAV ── */}
       <nav
@@ -58,11 +79,11 @@ export default async function DashboardLayout({
         style={{
           height: 56,
           background: 'rgba(7,17,29,0.97)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: `1px solid ${primary}22`,
           backdropFilter: 'blur(12px)',
         }}
       >
-        {/* Left: logo */}
+        {/* Left: FieldPass logo */}
         <Link href="/dashboard">
           <Logo />
         </Link>
@@ -96,22 +117,27 @@ export default async function DashboardLayout({
           ))}
         </div>
 
-        {/* Right: avatar + sign out */}
+        {/* Right: org logo avatar + sign out */}
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/settings"
-            className="hidden sm:flex items-center justify-center rounded-full text-xs font-bold"
+            className="hidden sm:flex items-center justify-center rounded-full overflow-hidden"
             style={{
-              width: 30,
-              height: 30,
-              background: 'linear-gradient(135deg, #1db954, #0d7740)',
-              color: '#07111d',
-              textDecoration: 'none',
+              width: 32,
+              height: 32,
+              background: logoUrl ? '#fff' : `linear-gradient(135deg, ${primary}, ${secondary})`,
               flexShrink: 0,
+              border: `2px solid ${primary}55`,
+              textDecoration: 'none',
+              position: 'relative',
             }}
-            title={user?.email ?? 'Settings'}
+            title={orgName ?? user?.email ?? 'Settings'}
           >
-            {initials}
+            {logoUrl ? (
+              <Image src={logoUrl} alt={orgName ?? 'Logo'} fill sizes="32px" style={{ objectFit: 'contain', padding: 3 }} />
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{initials}</span>
+            )}
           </Link>
           <form action={signOut}>
             <button
@@ -137,12 +163,55 @@ export default async function DashboardLayout({
           style={{
             width: 200,
             background: '#07111d',
-            borderRight: '1px solid rgba(255,255,255,0.05)',
+            borderRight: `1px solid ${primary}18`,
           }}
         >
+          {/* Org identity card */}
+          <div
+            style={{
+              margin: '0 12px 16px',
+              borderRadius: 10,
+              padding: '10px 12px',
+              background: `${primary}10`,
+              border: `1px solid ${primary}25`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            {/* Logo or initials */}
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background: logoUrl ? '#fff' : primary,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                position: 'relative',
+                border: `1px solid ${primary}40`,
+              }}
+            >
+              {logoUrl ? (
+                <Image src={logoUrl} alt={orgName ?? 'Logo'} fill sizes="36px" style={{ objectFit: 'contain', padding: 3 }} />
+              ) : (
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{initials}</span>
+              )}
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#f0f6ff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {orgName ?? 'My Program'}
+              </p>
+              <p style={{ fontSize: 10, color: 'var(--fp-dim)', margin: 0 }}>FieldPass</p>
+            </div>
+          </div>
+
           <div className="px-3 flex flex-col gap-0.5">
             <p
-              className="text-xs font-semibold uppercase tracking-widest px-2 mb-1.5 mt-1"
+              className="text-xs font-semibold uppercase tracking-widest px-2 mb-1.5"
               style={{ color: 'var(--fp-dim)' }}
             >
               My team
@@ -174,6 +243,9 @@ export default async function DashboardLayout({
               </Link>
             ))}
           </div>
+
+          {/* Bottom accent bar */}
+          <div style={{ marginTop: 'auto', margin: '16px 12px 0', height: 3, borderRadius: 2, background: `linear-gradient(to right, ${primary}, ${secondary})` }} />
         </aside>
 
         {/* Main content */}
@@ -188,7 +260,7 @@ export default async function DashboardLayout({
         style={{
           height: 64,
           background: 'rgba(7,17,29,0.98)',
-          borderTop: '1px solid rgba(255,255,255,0.07)',
+          borderTop: `1px solid ${primary}25`,
           backdropFilter: 'blur(12px)',
         }}
       >

@@ -18,6 +18,9 @@
   --fp-green-dim: rgba(29, 185, 84, 0.12);
   --fp-muted: rgba(232, 241, 251, 0.45);
   --fp-dim: rgba(232, 241, 251, 0.25);
+  /* Org brand colors — overridden per-org in dashboard/layout.tsx */
+  --org-primary: #1db954;
+  --org-secondary: #0d7740;
 }
 
 body {
